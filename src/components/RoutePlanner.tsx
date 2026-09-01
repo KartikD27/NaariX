@@ -93,16 +93,26 @@ export default function RoutePlanner({
   const fallbackSearch = async (query: string, field: "start" | "end") => {
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&limit=5&countrycodes=in`,
-        { headers: { "Accept-Language": "en" } }
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`
       );
       const data = await res.json();
-      if (field === "start") setStartResults(data);
-      else setEndResults(data);
+      if (data && Array.isArray(data.features)) {
+        const formatted = data.features.map((f: any) => ({
+          display_name: [f.properties.name, f.properties.street, f.properties.city, f.properties.state]
+            .filter(Boolean)
+            .join(", "),
+          lat: f.geometry.coordinates[1].toString(),
+          lon: f.geometry.coordinates[0].toString(),
+        }));
+        if (field === "start") setStartResults(formatted);
+        else setEndResults(formatted);
+      } else {
+        if (field === "start") setStartResults([]);
+        else setEndResults([]);
+      }
     } catch {
-      // Silent fail for demo
+      if (field === "start") setStartResults([]);
+      else setEndResults([]);
     }
     setSearching(null);
   };
