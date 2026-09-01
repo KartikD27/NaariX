@@ -2,7 +2,7 @@
 
 import { APIProvider, Library } from "@vis.gl/react-google-maps";
 
-const LIBRARIES: Library[] = ["visualization"];
+const LIBRARIES: Library[] = ["places", "geometry"];
 
 export default function GoogleMapsProvider({ children }: { children: React.ReactNode }) {
   // Use a placeholder if no key is provided in env yet.

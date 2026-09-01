@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Search,
   Navigation,
@@ -31,6 +31,7 @@ interface SearchResult {
   display_name: string;
   lat: string;
   lon: string;
+  place_id?: string;
 }
 
 // No longer need manual speed factor since we use OSRM foot profile
@@ -87,14 +88,9 @@ export default function RoutePlanner({
     }
   }, [userLocation]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const searchPlace = async (query: string, field: "start" | "end") => {
-    if (query.trim().length < 3) {
-      if (field === "start") setStartResults([]);
-      else setEndResults([]);
-      return;
-    }
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    setSearching(field);
+  const fallbackSearch = async (query: string, field: "start" | "end") => {
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -111,16 +107,81 @@ export default function RoutePlanner({
     setSearching(null);
   };
 
-  const selectStart = (result: SearchResult) => {
-    const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+  const searchPlace = (query: string, field: "start" | "end") => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.trim().length < 3) {
+      if (field === "start") setStartResults([]);
+      else setEndResults([]);
+      return;
+    }
+
+    setSearching(field);
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        try {
+          const service = new window.google.maps.places.AutocompleteService();
+          service.getPlacePredictions(
+            { input: query, componentRestrictions: { country: "in" } },
+            (predictions, status) => {
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
+                const formattedResults = predictions.map((p) => ({
+                  display_name: p.description,
+                  lat: "",
+                  lon: "",
+                  place_id: p.place_id,
+                }));
+                if (field === "start") setStartResults(formattedResults);
+                else setEndResults(formattedResults);
+                setSearching(null);
+              } else {
+                fallbackSearch(query, field);
+              }
+            }
+          );
+        } catch (e) {
+          fallbackSearch(query, field);
+        }
+      } else {
+        fallbackSearch(query, field);
+      }
+    }, 600); // 600ms debounce
+  };
+
+  const resolveCoordinates = async (result: SearchResult): Promise<{ lat: number; lng: number } | null> => {
+    if (result.lat && result.lon) {
+      return { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+    }
+    if (result.place_id && window.google && window.google.maps) {
+      const geocoder = new window.google.maps.Geocoder();
+      try {
+        const response = await geocoder.geocode({ placeId: result.place_id });
+        if (response.results && response.results.length > 0) {
+          const loc = response.results[0].geometry.location;
+          return { lat: loc.lat(), lng: loc.lng() };
+        }
+      } catch (e) {
+        console.error("Geocoding failed", e);
+      }
+    }
+    return null;
+  };
+
+  const selectStart = async (result: SearchResult) => {
+    const coords = await resolveCoordinates(result);
+    if (!coords) return;
     setStartCoords(coords);
     setStartQuery(result.display_name?.split(",").slice(0, 2).join(",").trim() || "");
     setStartResults([]);
     onFlyTo({ lat: coords.lat, lng: coords.lng, zoom: 14 });
   };
 
-  const selectEnd = (result: SearchResult) => {
-    const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
+  const selectEnd = async (result: SearchResult) => {
+    const coords = await resolveCoordinates(result);
+    if (!coords) return;
     setEndCoords(coords);
     setEndQuery(result.display_name?.split(",").slice(0, 2).join(",").trim() || "");
     setEndResults([]);
