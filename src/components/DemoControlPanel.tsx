@@ -293,7 +293,7 @@ export default function DemoControlPanel({ userLocation, onClose }: DemoControlP
                 <HeartOff className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <h3 className="text-white text-sm font-semibold">Dead Man's Switch</h3>
+                <h3 className="text-white text-sm font-semibold">Dead Man&apos;s Switch</h3>
                 <p className="text-slate-400 text-xs">5-minute countdown with cancel grace window</p>
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function DemoControlPanel({ userLocation, onClose }: DemoControlP
                 className="w-full bg-red-500/20 text-red-400 py-2 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors flex items-center justify-center gap-2"
               >
                 <HeartOff className="w-4 h-4" />
-                Start Dead Man's Switch
+                Start Dead Man&apos;s Switch
               </button>
             )}
           </div>

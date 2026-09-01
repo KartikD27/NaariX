@@ -100,7 +100,7 @@ export default function LandingPage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-coral-500/20 blur-3xl rounded-full" />
               <h3 className="text-2xl font-bold text-white mb-2">Did you know?</h3>
               <p className="text-coral-300 font-medium text-lg mb-4">
-                "Women are 36% less likely to travel at night due to safety concerns." <br/><span className="text-sm text-white/40">— National Bureau of Economic Research (NBER)</span>
+                &quot;Women are 36% less likely to travel at night due to safety concerns.&quot; <br/><span className="text-sm text-white/40">— National Bureau of Economic Research (NBER)</span>
               </p>
               <p className="text-white/60 mb-6 text-sm">
                 NaariX solves this by generating real-time safety scores using environmental factors (lighting, openness, distance to help) instead of relying solely on delayed crime statistics.

@@ -176,7 +176,7 @@ export default function CommunityFeed({
           Community Safety Feed
         </h2>
         <p className="text-teal-300/60 text-xs mb-4">
-          Share local safety observations. Posts nudge the zone's safety score,
+          Share local safety observations. Posts nudge the zone&apos;s safety score,
           improving the map for everyone.
         </p>
 
