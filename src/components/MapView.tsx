@@ -55,8 +55,10 @@ function MapController({
 }) {
   const map = useMap();
   const mapsLibrary = useMapsLibrary("maps");
+  const visualizationLibrary = useMapsLibrary("visualization");
   const polygonsRef = useRef<google.maps.Polygon[]>([]);
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
+  const heatmapLayerRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
 
   // Pan/zoom the map when flyToTarget changes
   useEffect(() => {
@@ -98,6 +100,40 @@ function MapController({
       polygonsRef.current.push(polygon);
     });
   }, [map, zones, timeMode, selectedZoneId, onSelectZone]);
+
+  // Heatmap Layer
+  useEffect(() => {
+    if (!map || !visualizationLibrary || !window.google || !window.google.maps.visualization) return;
+
+    if (!heatmapLayerRef.current) {
+      heatmapLayerRef.current = new window.google.maps.visualization.HeatmapLayer({
+        map,
+        radius: 60,
+        opacity: 0.6,
+        gradient: [
+          'rgba(0, 0, 0, 0)',
+          'rgba(244, 63, 94, 0.2)', // rose-500
+          'rgba(244, 63, 94, 0.4)',
+          'rgba(244, 63, 94, 0.6)',
+          'rgba(225, 29, 72, 0.8)', // rose-600
+          'rgba(159, 18, 57, 1)',   // rose-900
+        ]
+      });
+    }
+
+    const heatmapData = zones
+      .filter((zone) => computeScore(zone, timeMode).total < 6) // Heat for dangerous/moderate zones
+      .map((zone) => {
+        const score = computeScore(zone, timeMode).total;
+        return {
+          location: new window.google.maps.LatLng(zone.center_lat, zone.center_lng),
+          weight: Math.pow(10 - score, 1.5), // Exponential weight for dangerous areas
+        };
+      });
+
+    heatmapLayerRef.current.setData(heatmapData);
+
+  }, [map, visualizationLibrary, zones, timeMode]);
 
   // Draw routes
   useEffect(() => {

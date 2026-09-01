@@ -7,7 +7,7 @@ export default function GoogleMapsProvider({ children }: { children: React.React
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSy_YOUR_PLACEHOLDER_KEY";
   
   return (
-    <APIProvider apiKey={apiKey} onLoad={() => console.log('Maps API has loaded.')}>
+    <APIProvider apiKey={apiKey} libraries={["visualization"]} onLoad={() => console.log('Maps API has loaded.')}>
       {children}
     </APIProvider>
   );

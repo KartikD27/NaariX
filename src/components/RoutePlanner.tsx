@@ -33,8 +33,7 @@ interface SearchResult {
   lon: string;
 }
 
-// Walk speed ~5 km/h — OSRM driving times adjusted for pedestrians
-const WALK_SPEED_FACTOR = 6; // walking takes ~6x longer than driving
+// No longer need manual speed factor since we use OSRM foot profile
 
 // Time-aware safety tips keyed by hour range
 function getSafetyTip(isNight: boolean, zones: Zone[]): string {
@@ -115,7 +114,7 @@ export default function RoutePlanner({
   const selectStart = (result: SearchResult) => {
     const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
     setStartCoords(coords);
-    setStartQuery(result.display_name.split(",")[0]);
+    setStartQuery(result.display_name.split(",").slice(0, 2).join(",").trim());
     setStartResults([]);
     onFlyTo({ lat: coords.lat, lng: coords.lng, zoom: 14 });
   };
@@ -123,7 +122,7 @@ export default function RoutePlanner({
   const selectEnd = (result: SearchResult) => {
     const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
     setEndCoords(coords);
-    setEndQuery(result.display_name.split(",")[0]);
+    setEndQuery(result.display_name.split(",").slice(0, 2).join(",").trim());
     setEndResults([]);
     onFlyTo({ lat: coords.lat, lng: coords.lng, zoom: 14 });
   };
@@ -196,7 +195,7 @@ export default function RoutePlanner({
     setRoutes([]);
 
     try {
-      const profile = "driving"; // OSRM only supports driving; we'll adjust times for walk mode
+      const profile = travelMode === "walk" ? "foot" : "driving";
       const url = `https://router.project-osrm.org/route/v1/${profile}/${startCoords.lng},${startCoords.lat};${endCoords.lng},${endCoords.lat}?alternatives=true&geometries=geojson&overview=full`;
 
       const res = await fetch(url);
@@ -222,10 +221,7 @@ export default function RoutePlanner({
               c[0],
             ]);
           const { safetyScore, passedZones } = analyseRoute(coordinates);
-          const duration =
-            travelMode === "walk"
-              ? route.duration * WALK_SPEED_FACTOR
-              : route.duration;
+          const duration = route.duration;
           return {
             coordinates,
             duration,

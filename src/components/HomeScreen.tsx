@@ -7,11 +7,13 @@ import { computeScore, scoreColor } from "@/lib/safetyScore";
 
 interface HomeScreenProps {
   nearbyZone: Zone | null;
+  userLocation: { lat: number; lng: number } | null;
   onNavigate: (tab: string) => void;
   onSOS: () => void;
+  onFakeCall: () => void;
 }
 
-export default function HomeScreen({ nearbyZone, onNavigate, onSOS }: HomeScreenProps) {
+export default function HomeScreen({ nearbyZone, userLocation, onNavigate, onSOS, onFakeCall }: HomeScreenProps) {
   const currentHour = new Date().getHours();
   const timeMode = currentHour >= 20 || currentHour < 6 ? "night" : "day";
   
@@ -107,6 +109,17 @@ export default function HomeScreen({ nearbyZone, onNavigate, onSOS }: HomeScreen
         </button>
 
         <button 
+          onClick={() => {
+            if (navigator.share && userLocation) {
+              navigator.share({
+                title: 'Emergency: My Location',
+                text: 'I need help! Here is my current location:',
+                url: `https://maps.google.com/?q=${userLocation.lat},${userLocation.lng}`
+              }).catch(console.error);
+            } else {
+              alert("Location sharing is not supported on this device or location is unavailable.");
+            }
+          }}
           className="glass-card-light p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
           <div className="bg-indigo-500/20 p-2.5 rounded-full">
@@ -116,6 +129,7 @@ export default function HomeScreen({ nearbyZone, onNavigate, onSOS }: HomeScreen
         </button>
 
         <button 
+          onClick={onFakeCall}
           className="glass-card-light p-4 rounded-xl flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
           <div className="bg-amber-500/20 p-2.5 rounded-full">

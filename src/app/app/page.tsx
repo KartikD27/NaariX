@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
-import { Map as MapIcon, Route as RouteIcon, Shield, MessageSquare, Scale, Navigation, Sun, Moon, Volume2, VolumeX, Settings, MapPin, User, ArrowLeft } from "lucide-react";
+import { Map as MapIcon, Route as RouteIcon, Shield, MessageSquare, Scale, Navigation, Sun, Moon, Volume2, VolumeX, Settings, MapPin, User, ArrowLeft, Phone } from "lucide-react";
 import Link from "next/link";
 import { findNearbyZone } from "@/lib/geoUtils";
 import MapView from "@/components/MapView";
@@ -33,6 +33,9 @@ export default function App() {
   const [alarmActive, setAlarmActive] = useState(false);
   const [showScreenMessage, setShowScreenMessage] = useState(false);
   const [showDemoPanel, setShowDemoPanel] = useState(false);
+  const [showFakeCall, setShowFakeCall] = useState(false);
+  const [fakeCallActive, setFakeCallActive] = useState(false);
+  const [fakeCallTime, setFakeCallTime] = useState(0);
   const [devToggleCount, setDevToggleCount] = useState(0);
   const devTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const siren = useSiren();
@@ -106,6 +109,23 @@ export default function App() {
       setDevToggleCount(0);
     }
   }, [devToggleCount]);
+
+  // Handle fake call timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (fakeCallActive) {
+      interval = setInterval(() => {
+        setFakeCallTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [fakeCallActive]);
+
+  const formatCallTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   const selectedZone = zones.find((z) => z.id === selectedZoneId);
 
@@ -205,8 +225,10 @@ export default function App() {
           <div className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <HomeScreen
               nearbyZone={nearbyZone}
+              userLocation={userLocation}
               onNavigate={(tab) => setActiveTab(tab as Tab)}
               onSOS={() => setActiveTab("sos")}
+              onFakeCall={() => setShowFakeCall(true)}
             />
           </div>
         )}
@@ -327,6 +349,7 @@ export default function App() {
               onFlashScreen={handleFlashScreen}
               onPlaySiren={toggleAlarm}
               onShowMessage={() => setShowScreenMessage(true)}
+              onFakeCall={() => setShowFakeCall(true)}
             />
           </div>
         )}
@@ -359,6 +382,53 @@ export default function App() {
             <h2 className="text-white text-3xl font-bold mb-2">I NEED HELP</h2>
             <p className="text-white/80 text-lg">Please assist me</p>
             <p className="text-white/60 text-sm mt-4">Tap anywhere to dismiss</p>
+          </div>
+        </div>
+      )}
+
+      {/* Fake Call Overlay */}
+      {showFakeCall && (
+        <div className="fixed inset-0 z-[2000] bg-slate-900 flex flex-col items-center justify-between py-16 animate-fade-in">
+          <div className="flex flex-col items-center mt-10">
+            <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center mb-6">
+              <User className="w-12 h-12 text-slate-400" />
+            </div>
+            <h1 className="text-white text-3xl font-light mb-2">Dad</h1>
+            <p className="text-slate-400">
+              {fakeCallActive ? formatCallTime(fakeCallTime) : "Calling mobile..."}
+            </p>
+          </div>
+
+          <div className="w-full max-w-xs flex justify-between px-8 mb-10">
+            {!fakeCallActive ? (
+              <>
+                <button
+                  onClick={() => setShowFakeCall(false)}
+                  className="w-16 h-16 rounded-full bg-red-500 flex flex-col items-center justify-center text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse"
+                >
+                  <Phone className="w-8 h-8 rotate-[135deg]" />
+                </button>
+                <button
+                  onClick={() => {
+                    setFakeCallActive(true);
+                    setFakeCallTime(0);
+                  }}
+                  className="w-16 h-16 rounded-full bg-green-500 flex flex-col items-center justify-center text-white shadow-[0_0_20px_rgba(34,197,94,0.5)] animate-pulse"
+                >
+                  <Phone className="w-8 h-8" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setFakeCallActive(false);
+                  setShowFakeCall(false);
+                }}
+                className="w-16 h-16 rounded-full bg-red-500 flex flex-col items-center justify-center text-white shadow-lg mx-auto"
+              >
+                <Phone className="w-8 h-8 rotate-[135deg]" />
+              </button>
+            )}
           </div>
         </div>
       )}

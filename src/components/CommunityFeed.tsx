@@ -7,6 +7,7 @@ import {
   Clock,
   Globe,
   Navigation,
+  Check,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { SafetyPost, Zone } from "@/types";
@@ -53,6 +54,8 @@ export default function CommunityFeed({
 }: CommunityFeedProps) {
   const [posts, setPosts] = useState<SafetyPost[]>([]);
   const [content, setContent] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(true);
+  const [authorName, setAuthorName] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState<string>("");
   const [posting, setPosting] = useState(false);
   const [profanityWarning, setProfanityWarning] = useState(false);
@@ -132,10 +135,11 @@ export default function CommunityFeed({
     const lng = zone?.center_lng ?? userLocation?.lng ?? null;
 
     const cleanContent = maskProfanity(content.trim());
+    const finalAuthor = isAnonymous ? "Anonymous" : authorName.trim() || "Anonymous";
 
     await supabase.from("safety_posts").insert({
       zone_id: finalZoneId,
-      author: "Anonymous",
+      author: finalAuthor,
       content: cleanContent,
       lat,
       lng,
@@ -254,22 +258,50 @@ export default function CommunityFeed({
             maxLength={200}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-teal-100 placeholder-teal-300/40 text-sm resize-none focus:outline-none focus:border-teal-400"
           />
-          {profanityWarning && (
+            {profanityWarning && (
             <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
               Profanity detected — it will be masked.
             </p>
           )}
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-teal-300/40">{content.length}/200</span>
-            <button
-              onClick={submitPost}
-              disabled={!content.trim() || (activeTab === "nearby" && !selectedZoneId) || posting}
-              className="bg-teal-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors disabled:opacity-40 flex items-center gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Post
-            </button>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 border-t border-white/5 pt-3">
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isAnonymous ? "bg-teal-500 border-teal-500" : "border-slate-500 group-hover:border-teal-400"}`}>
+                  {isAnonymous && <Check className="w-3 h-3 text-white" />}
+                </div>
+                <input 
+                  type="checkbox" 
+                  checked={isAnonymous} 
+                  onChange={(e) => setIsAnonymous(e.target.checked)} 
+                  className="hidden" 
+                />
+                <span className="text-xs text-teal-100 group-hover:text-teal-50 transition-colors">Post Anonymously</span>
+              </label>
+              {!isAnonymous && (
+                <input
+                  type="text"
+                  placeholder="Your Name"
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  maxLength={30}
+                  className="w-full sm:w-48 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-teal-100 placeholder-teal-300/40 text-xs focus:outline-none focus:border-teal-400 transition-all animate-fade-in"
+                />
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+              <span className="text-xs text-teal-300/40">{content.length}/200</span>
+              <button
+                onClick={submitPost}
+                disabled={!content.trim() || (activeTab === "nearby" && !selectedZoneId) || posting || (!isAnonymous && !authorName.trim())}
+                className="bg-teal-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Post
+              </button>
+            </div>
           </div>
         </div>
 
