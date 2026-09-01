@@ -114,7 +114,7 @@ export default function RoutePlanner({
   const selectStart = (result: SearchResult) => {
     const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
     setStartCoords(coords);
-    setStartQuery(result.display_name.split(",").slice(0, 2).join(",").trim());
+    setStartQuery(result.display_name?.split(",").slice(0, 2).join(",").trim() || "");
     setStartResults([]);
     onFlyTo({ lat: coords.lat, lng: coords.lng, zoom: 14 });
   };
@@ -122,7 +122,7 @@ export default function RoutePlanner({
   const selectEnd = (result: SearchResult) => {
     const coords = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) };
     setEndCoords(coords);
-    setEndQuery(result.display_name.split(",").slice(0, 2).join(",").trim());
+    setEndQuery(result.display_name?.split(",").slice(0, 2).join(",").trim() || "");
     setEndResults([]);
     onFlyTo({ lat: coords.lat, lng: coords.lng, zoom: 14 });
   };
