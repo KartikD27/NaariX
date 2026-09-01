@@ -120,19 +120,21 @@ export default function CommunityFeed({
   }, [loadPosts]);
 
   const submitPost = async () => {
-    if (!content.trim() || !selectedZoneId) return;
+    if (!content.trim() || (activeTab === "nearby" && !selectedZoneId)) return;
 
     setPosting(true);
     const hasProfanity = containsProfanity(content);
 
-    const zone = zones.find((z) => z.id === selectedZoneId);
+    // If general tab, zone can be null. If nearby tab, selectedZoneId is required.
+    const finalZoneId = activeTab === "general" ? null : selectedZoneId;
+    const zone = finalZoneId ? zones.find((z) => z.id === finalZoneId) : null;
     const lat = zone?.center_lat ?? userLocation?.lat ?? null;
     const lng = zone?.center_lng ?? userLocation?.lng ?? null;
 
     const cleanContent = maskProfanity(content.trim());
 
     await supabase.from("safety_posts").insert({
-      zone_id: selectedZoneId,
+      zone_id: finalZoneId,
       author: "Anonymous",
       content: cleanContent,
       lat,
@@ -164,7 +166,8 @@ export default function CommunityFeed({
 
   // Filter posts for the "Nearby" tab
   const displayedPosts = useMemo(() => {
-    if (activeTab === "general" || !nearbyZone) return posts;
+    if (activeTab === "general") return posts.filter((p) => p.zone_id === null || !p.zone_id);
+    if (!nearbyZone) return [];
     return posts.filter((p) => p.zone_id === nearbyZone.id);
   }, [posts, activeTab, nearbyZone]);
 
@@ -226,23 +229,25 @@ export default function CommunityFeed({
 
         {/* Post composer */}
         <div className="glass-card p-3 mb-4">
-          <select
-            value={selectedZoneId}
-            onChange={(e) => setSelectedZoneId(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-teal-100 text-sm mb-2 focus:outline-none focus:border-teal-400"
-          >
-            <option value="" className="bg-slate-800">
-              Select nearby zone
-            </option>
-            {zones.map((zone) => (
-              <option key={zone.id} value={zone.id} className="bg-slate-800">
-                {zone.name}
-                {nearbyZone?.id === zone.id ? " (You are here)" : ""}
+          {activeTab === "nearby" && (
+            <select
+              value={selectedZoneId}
+              onChange={(e) => setSelectedZoneId(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-teal-100 text-sm mb-2 focus:outline-none focus:border-teal-400"
+            >
+              <option value="" className="bg-slate-800">
+                Select nearby zone
               </option>
-            ))}
-          </select>
+              {zones.map((zone) => (
+                <option key={zone.id} value={zone.id} className="bg-slate-800">
+                  {zone.name}
+                  {nearbyZone?.id === zone.id ? " (You are here)" : ""}
+                </option>
+              ))}
+            </select>
+          )}
           <textarea
-            placeholder="e.g. Poor lighting here after 8pm"
+            placeholder={activeTab === "general" ? "Share a general safety tip or observation..." : "e.g. Poor lighting here after 8pm"}
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             rows={2}
@@ -259,7 +264,7 @@ export default function CommunityFeed({
             <span className="text-xs text-teal-300/40">{content.length}/200</span>
             <button
               onClick={submitPost}
-              disabled={!content.trim() || !selectedZoneId || posting}
+              disabled={!content.trim() || (activeTab === "nearby" && !selectedZoneId) || posting}
               className="bg-teal-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-teal-600 transition-colors disabled:opacity-40 flex items-center gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />

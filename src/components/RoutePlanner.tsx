@@ -12,6 +12,8 @@ import {
   Sun,
   Moon,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import type { Zone, RouteOption } from "@/types";
 import { computeScore, scoreColor } from "@/lib/safetyScore";
@@ -73,6 +75,7 @@ export default function RoutePlanner({
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [searching, setSearching] = useState<"start" | "end" | null>(null);
   const [travelMode, setTravelMode] = useState<"drive" | "walk">("drive");
+  const [isMinimized, setIsMinimized] = useState(false);
 
   const currentHour = new Date().getHours();
   const isNight = currentHour >= 20 || currentHour < 6;
@@ -270,6 +273,11 @@ export default function RoutePlanner({
         const midLat = (Math.min(...allLats) + Math.max(...allLats)) / 2;
         const midLng = (Math.min(...allLngs) + Math.max(...allLngs)) / 2;
         onFlyTo({ lat: midLat, lng: midLng, zoom: 13 });
+        
+        // Auto-minimize on mobile to show the map
+        if (window.innerWidth < 768) {
+          setIsMinimized(true);
+        }
       }
     } catch {
       // Silent fail for demo
@@ -297,14 +305,27 @@ export default function RoutePlanner({
   const safetyTip = getSafetyTip(isNight, zones);
 
   return (
-    <div className="h-full w-full pointer-events-none p-4 pb-20 flex flex-col items-center">
-      <div className="w-full max-w-md bg-slate-950/85 backdrop-blur-md border border-white/10 p-4 rounded-3xl pointer-events-auto max-h-full overflow-y-auto shadow-2xl">
-        <h2 className="text-teal-100 text-lg font-bold mb-4 flex items-center gap-2">
-          <RouteIcon className="w-5 h-5" />
-          Safer Route Planner
-        </h2>
+    <div className={`h-full w-full pointer-events-none p-4 pb-20 flex flex-col items-center ${isMinimized ? "justify-end" : "justify-start"}`}>
+      <div className={`w-full max-w-md bg-slate-950/85 backdrop-blur-md border border-white/10 p-4 rounded-3xl pointer-events-auto shadow-2xl transition-all ${isMinimized ? "max-h-[30vh] overflow-y-auto" : "max-h-full overflow-y-auto"}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-teal-100 text-lg font-bold flex items-center gap-2">
+            <RouteIcon className="w-5 h-5" />
+            Safer Route Planner
+          </h2>
+          {routes.length > 0 && (
+            <button
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-teal-100 transition-colors md:hidden"
+              aria-label={isMinimized ? "Expand planner" : "Minimize planner"}
+            >
+              {isMinimized ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
+          )}
+        </div>
 
-        {/* Travel mode toggle */}
+        {!isMinimized && (
+          <>
+            {/* Travel mode toggle */}
         <div className="flex gap-1 mb-4 p-1 rounded-xl bg-white/5 border border-white/10">
           <button
             onClick={() => setTravelMode("drive")}
@@ -463,10 +484,15 @@ export default function RoutePlanner({
             </>
           )}
         </button>
+        </>
+        )}
 
         {/* Route results */}
         {routes.length > 0 && (
           <div className="mt-4 space-y-3 animate-fade-in">
+            {isMinimized && (
+              <p className="text-xs text-teal-300/60 mb-2">Tap <b>^</b> to expand controls and see more details.</p>
+            )}
             <h3 className="text-teal-200 text-sm font-semibold">
               Route Comparison
             </h3>
@@ -570,7 +596,7 @@ export default function RoutePlanner({
                 </div>
               );
             })}
-            <p className="text-xs text-teal-300/50 text-center">
+            <p className="text-xs text-teal-300/50 text-center mt-3">
               The safest route (teal) steers around low-scored zones. The
               fastest route (blue) prioritises speed.
             </p>

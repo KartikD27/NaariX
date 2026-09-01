@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Phone, Shield, Users, MapPin, Volume2, MessageSquare, ListChecks, AlertTriangle, Plus, Check, X, Mail, Clock } from "lucide-react";
+import { Phone, Shield, Users, User, MapPin, Volume2, MessageSquare, ListChecks, AlertTriangle, Plus, Check, X, Mail, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import type { TrustedContact, SosLogEntry } from "@/types";
 
@@ -23,11 +23,14 @@ export default function SosScreen({
   const [holdProgress, setHoldProgress] = useState(0);
   const [triggered, setTriggered] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showFakeCall, setShowFakeCall] = useState(false);
+  const [fakeCallActive, setFakeCallActive] = useState(false);
+  const [fakeCallTime, setFakeCallTime] = useState(0);
   const [logEntries, setLogEntries] = useState<SosLogEntry[]>([]);
   const [contacts, setContacts] = useState<TrustedContact[]>([]);
   const [showAddContact, setShowAddContact] = useState(false);
   const [newContactName, setNewContactName] = useState("");
-  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newContactPhone, setNewContactPhone] = useState("");
   const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -63,7 +66,7 @@ export default function SosScreen({
 
     holdTimerRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
-      const progress = Math.min(elapsed / 2000, 1);
+      const progress = Math.min(elapsed / 1000, 1);
       setHoldProgress(progress);
 
       if (progress >= 1 && holdTimerRef.current) {
@@ -165,14 +168,15 @@ export default function SosScreen({
   };
 
   const addContact = async () => {
-    if (!newContactName.trim() || !newContactEmail.trim()) return;
+    if (!newContactName.trim() || !newContactPhone.trim()) return;
 
     const token = Math.random().toString(36).substring(2, 15);
     const { data } = await supabase
       .from("trusted_contacts")
       .insert({
         name: newContactName.trim(),
-        email: newContactEmail.trim(),
+        phone: newContactPhone.trim(),
+        email: "placeholder@example.com", // Keeping schema compatibility
         confirmed: false,
         confirm_token: token,
       })
@@ -182,7 +186,7 @@ export default function SosScreen({
     if (data) {
       setPendingConfirm(data.id);
       setNewContactName("");
-      setNewContactEmail("");
+      setNewContactPhone("");
     }
     loadContacts();
   };
@@ -204,6 +208,23 @@ export default function SosScreen({
   const radius = 90;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - holdProgress);
+
+  // Handle fake call timer
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (fakeCallActive) {
+      interval = setInterval(() => {
+        setFakeCallTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [fakeCallActive]);
+
+  const formatCallTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-b from-teal-950 to-slate-900 p-4 pb-20">
@@ -247,7 +268,7 @@ export default function SosScreen({
             </div>
           )}
           <p className="text-teal-100 text-center text-sm mb-6 max-w-xs">
-            Press and hold the button for 2 seconds to send an emergency alert to your trusted contacts.
+            Press and hold the button for 1 second to send an emergency alert to your trusted contacts.
           </p>
 
           {/* Hold button */}
@@ -303,7 +324,7 @@ export default function SosScreen({
               ) : (
                 <>
                   <Shield className="w-10 h-10 mb-1" />
-                  <span className="text-sm font-bold">HOLD 2s</span>
+                  <span className="text-sm font-bold">HOLD 1s</span>
                 </>
               )}
             </button>
@@ -455,10 +476,10 @@ export default function SosScreen({
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-teal-100 placeholder-teal-300/40 mb-2 focus:outline-none focus:border-teal-400"
               />
               <input
-                type="email"
-                placeholder="Email address"
-                value={newContactEmail}
-                onChange={(e) => setNewContactEmail(e.target.value)}
+                type="tel"
+                placeholder="Phone number"
+                value={newContactPhone}
+                onChange={(e) => setNewContactPhone(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-teal-100 placeholder-teal-300/40 mb-3 focus:outline-none focus:border-teal-400"
               />
               <button
@@ -491,7 +512,7 @@ export default function SosScreen({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-teal-100 font-medium text-sm">{contact.name}</p>
-                  <p className="text-teal-300/60 text-xs truncate">{contact.email}</p>
+                  <p className="text-teal-300/60 text-xs truncate">{contact.phone || contact.email}</p>
                   {pendingConfirm === contact.id && !contact.confirmed && (
                     <button
                       onClick={() => confirmContact(contact.id)}
@@ -534,18 +555,26 @@ export default function SosScreen({
               { icon: Clock, label: "Check-in Timer", action: "checkin", color: "from-indigo-500 to-indigo-700" },
               { icon: Phone, label: "Fake Call", action: "fake_call", color: "from-purple-500 to-purple-700" },
             ].map((action) => (
-              <a
-                key={action.label}
-                href={action.number ? `tel:${action.number}` : undefined}
-                onClick={!action.number ? (e) => { e.preventDefault(); alert(`Mock ${action.label} activated!`); } : undefined}
-                className={`bg-gradient-to-br ${action.color} rounded-2xl p-5 flex flex-col items-center justify-center gap-2 shadow-lg hover:scale-105 transition-transform`}
-              >
-                <action.icon className="w-8 h-8 text-white" />
-                <span className="text-white text-sm font-semibold text-center">{action.label}</span>
-                {action.number && (
+              action.number ? (
+                <a
+                  key={action.label}
+                  href={`tel:${action.number}`}
+                  className={`bg-gradient-to-br ${action.color} rounded-2xl p-5 flex flex-col items-center justify-center gap-2 shadow-lg hover:scale-105 transition-transform`}
+                >
+                  <action.icon className="w-8 h-8 text-white" />
+                  <span className="text-white text-sm font-semibold text-center">{action.label}</span>
                   <span className="text-white/70 text-xs">{action.number}</span>
-                )}
-              </a>
+                </a>
+              ) : (
+                <button
+                  key={action.label}
+                  onClick={action.action === "fake_call" ? () => setShowFakeCall(true) : (e) => { e.preventDefault(); alert(`Mock ${action.label} activated!`); }}
+                  className={`bg-gradient-to-br ${action.color} rounded-2xl p-5 flex flex-col items-center justify-center gap-2 shadow-lg hover:scale-105 transition-transform w-full`}
+                >
+                  <action.icon className="w-8 h-8 text-white" />
+                  <span className="text-white text-sm font-semibold text-center">{action.label}</span>
+                </button>
+              )
             ))}
           </div>
 
@@ -557,6 +586,52 @@ export default function SosScreen({
               </p>
             ) : (
               <p className="text-teal-300/60 text-sm">Location not available — enable GPS.</p>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Fake Call Overlay */}
+      {showFakeCall && (
+        <div className="fixed inset-0 z-[2000] bg-slate-900 flex flex-col items-center justify-between py-16 animate-fade-in">
+          <div className="flex flex-col items-center mt-10">
+            <div className="w-24 h-24 rounded-full bg-slate-700 flex items-center justify-center mb-6">
+              <User className="w-12 h-12 text-slate-400" />
+            </div>
+            <h1 className="text-white text-3xl font-light mb-2">Dad</h1>
+            <p className="text-slate-400">
+              {fakeCallActive ? formatCallTime(fakeCallTime) : "Calling mobile..."}
+            </p>
+          </div>
+
+          <div className="w-full max-w-xs flex justify-between px-8 mb-10">
+            {!fakeCallActive ? (
+              <>
+                <button
+                  onClick={() => setShowFakeCall(false)}
+                  className="w-16 h-16 rounded-full bg-red-500 flex flex-col items-center justify-center text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse"
+                >
+                  <Phone className="w-8 h-8 rotate-[135deg]" />
+                </button>
+                <button
+                  onClick={() => {
+                    setFakeCallActive(true);
+                    setFakeCallTime(0);
+                  }}
+                  className="w-16 h-16 rounded-full bg-green-500 flex flex-col items-center justify-center text-white shadow-[0_0_20px_rgba(34,197,94,0.5)] animate-pulse"
+                >
+                  <Phone className="w-8 h-8" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setFakeCallActive(false);
+                  setShowFakeCall(false);
+                }}
+                className="w-16 h-16 rounded-full bg-red-500 flex flex-col items-center justify-center text-white shadow-lg mx-auto"
+              >
+                <Phone className="w-8 h-8 rotate-[135deg]" />
+              </button>
             )}
           </div>
         </div>

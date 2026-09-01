@@ -125,7 +125,7 @@ export default function App() {
   ];
 
   return (
-    <div className={`h-screen w-screen flex flex-col bg-slate-950 overflow-hidden ${alarmActive ? "screen-flash" : ""}`}>
+    <div className={`h-[100dvh] w-[100dvw] flex flex-col bg-slate-950 overflow-hidden ${alarmActive ? "screen-flash" : ""}`}>
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-teal-900 to-slate-900 z-10 border-b border-white/5">
         <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export default function App() {
 
         {/* Home Tab Overlay */}
         {activeTab === "home" && (
-          <div className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto md:left-4 md:top-4 md:w-[400px] md:h-[calc(100vh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
+          <div className="absolute inset-0 z-10 pointer-events-none md:pointer-events-auto md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <HomeScreen
               nearbyZone={nearbyZone}
               onNavigate={(tab) => setActiveTab(tab as Tab)}
@@ -305,7 +305,7 @@ export default function App() {
 
         {/* Routes tab */}
         {activeTab === "routes" && (
-          <div className="absolute inset-0 z-10 pointer-events-none md:left-4 md:top-4 md:w-[400px] md:h-[calc(100vh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
+          <div className="absolute inset-0 z-10 pointer-events-none md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <div className="pointer-events-auto h-full">
               <RoutePlanner
                 userLocation={userLocation}
@@ -321,7 +321,7 @@ export default function App() {
 
         {/* SOS tab */}
         {activeTab === "sos" && (
-          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100vh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
+          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <SosScreen
               userLocation={userLocation}
               onFlashScreen={handleFlashScreen}
@@ -333,14 +333,14 @@ export default function App() {
 
         {/* Community tab */}
         {activeTab === "community" && (
-          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100vh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
+          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <CommunityFeed zones={zones} userLocation={userLocation} onPostsChanged={loadData} />
           </div>
         )}
 
         {/* Portal tab */}
         {activeTab === "portal" && (
-          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100vh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
+          <div className="absolute inset-0 z-10 md:left-4 md:top-4 md:w-[400px] md:h-[calc(100dvh-140px)] md:bottom-auto md:right-auto md:rounded-3xl md:overflow-hidden md:border md:border-white/10 md:shadow-2xl">
             <PolicePortal zones={zones} />
           </div>
         )}
@@ -372,7 +372,7 @@ export default function App() {
       )}
 
       {/* Bottom tab bar */}
-      <nav className="flex items-center justify-around bg-slate-900/95 backdrop-blur-md border-t border-white/5 px-1 py-1.5 z-50">
+      <nav className="flex items-center justify-around bg-slate-900/95 backdrop-blur-md border-t border-white/5 px-1 py-1.5 pb-safe z-50">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const isSos = tab.id === "sos";

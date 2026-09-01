@@ -120,6 +120,7 @@ function MapController({
         strokeColor: route.color,
         strokeOpacity: 0.8,
         strokeWeight: 5,
+        zIndex: 50,
         map: map,
       });
 
