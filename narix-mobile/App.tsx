@@ -11,6 +11,7 @@ import { supabase } from './src/supabaseClient';
 import { Ionicons } from '@expo/vector-icons';
 
 import FakeCallScreen from './src/FakeCallScreen';
+import SosChatScreen from './src/SosChatScreen';
 
 const { width, height } = Dimensions.get('window');
 
@@ -20,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [showFakeCall, setShowFakeCall] = useState(false);
+  const [showSosChat, setShowSosChat] = useState(false);
 
   // 1. Check Auth & Get Initial Location
   useEffect(() => {
@@ -92,6 +94,10 @@ export default function App() {
     return <FakeCallScreen onEndCall={() => setShowFakeCall(false)} />;
   }
 
+  if (showSosChat) {
+    return <SosChatScreen onClose={() => setShowSosChat(false)} />;
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
@@ -134,7 +140,7 @@ export default function App() {
             <Text style={styles.badgeText}>{isActive ? 'LIVE' : 'STANDBY'}</Text>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
 
       {/* BOTTOM CONTROL SHEET */}
       <View style={styles.bottomSheet}>
@@ -182,6 +188,17 @@ export default function App() {
               <Ionicons name="call" size={22} color="#FFF" style={{marginRight: 8}}/>
               <Text style={styles.primaryButtonText}>
                 Simulate Fake Call
+              </Text>
+            </TouchableOpacity>
+
+            {/* Emergency Chat Button */}
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: '#FF3B30', marginTop: 12 }]} 
+              onPress={() => setShowSosChat(true)}
+            >
+              <Ionicons name="chatbubbles" size={22} color="#FFF" style={{marginRight: 8}}/>
+              <Text style={styles.primaryButtonText}>
+                Emergency SOS Chat
               </Text>
             </TouchableOpacity>
           </View>
