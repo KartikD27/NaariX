@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration } from 'react-native';
-import { Feather } from '@expo/vector-icons'; 
+import { Feather } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 
 interface FakeCallProps {
   onEndCall: () => void;
@@ -9,6 +10,15 @@ interface FakeCallProps {
 export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
   const [callState, setCallState] = useState<'ringing' | 'active' | 'ended'>('ringing');
   const [seconds, setSeconds] = useState(0);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
 
   // Haptic feedback loop for ringing state
   useEffect(() => {
@@ -39,11 +49,22 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 
   const handleAccept = async () => {
     setCallState('active');
-    console.log("Audio playing simulated (expo-av removed for Expo Go compatibility)");
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+         require('../assets/aj_sound.mp3')
+      );
+      setSound(sound);
+      await sound.playAsync();
+    } catch (e) {
+      console.log("Audio play error", e);
+    }
   };
 
   const handleDeclineOrEnd = async () => {
     setCallState('ended');
+    if (sound) {
+      await sound.stopAsync();
+    }
     onEndCall(); 
   };
 
