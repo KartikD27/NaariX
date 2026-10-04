@@ -11,6 +11,11 @@
     },
     "android": {
       "package": "com.kartikd.narix",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyChkXQL2Q3mQCsmu4406Q_XTJ2FVMhV-os"
+        }
+      },
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
