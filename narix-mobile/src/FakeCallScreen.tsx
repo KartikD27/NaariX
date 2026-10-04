@@ -22,7 +22,7 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 
   // Live Timer
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (callState === 'active') {
       interval = setInterval(() => {
         setSeconds((prev) => prev + 1);
