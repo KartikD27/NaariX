@@ -17,8 +17,9 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
   useEffect(() => {
     // Ensure audio plays even if the phone is on silent
     setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      shouldDuckAndroid: false,
+      playsInSilentMode: true,
+      interruptionMode: 'duckOthers',
+      allowsRecording: false,
     }).catch(console.error);
   }, []);
 
@@ -51,11 +52,14 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 
   const handleAccept = () => {
     setCallState('active');
+    console.log("Call accepted. Playing audio. isLoaded:", voicePlayer.isLoaded);
+    voicePlayer.volume = 1.0;
     voicePlayer.play();
   };
 
   const handleDeclineOrEnd = () => {
     setCallState('ended');
+    console.log("Call ended. Pausing audio.");
     voicePlayer.pause();
     onEndCall();
   };
