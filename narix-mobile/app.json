@@ -32,9 +32,11 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow NaariX to use your location for SOS tracking."
+          "locationAlwaysAndWhenInUsePermission": "Allow NaariX to use your location for SOS tracking.",
+          "isAndroidBackgroundLocationEnabled": true
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "extra": {
       "eas": {

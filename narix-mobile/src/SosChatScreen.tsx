@@ -7,7 +7,8 @@ import {
   FlatList, 
   StyleSheet, 
   KeyboardAvoidingView, 
-  Platform
+  Platform,
+  ScrollView
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from './supabaseClient'; 
@@ -35,24 +36,23 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
     }
   ]);
 
-  const sendMessage = async () => {
-    if (!inputText.trim()) return;
+  const sendMessage = async (overrideText?: string) => {
+    const textToSend = overrideText || inputText;
+    if (!textToSend.trim()) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
-      text: inputText,
+      text: textToSend,
       sender: 'victim',
       timestamp: new Date(),
     };
 
     // 1. Update the UI instantly for the user
     setMessages((prev) => [...prev, newMessage]);
-    setInputText('');
+    if (!overrideText) setInputText('');
 
     // 2. Push to Supabase so it appears on your Next.js Police Dashboard
     try {
-      /* 
-      TODO: You need to create a table for chat messages in Supabase first!
       const { error } = await supabase
         .from('dispatch_messages') // Replace with your actual table name
         .insert([{ 
@@ -62,7 +62,6 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
         }]);
 
       if (error) console.error("Supabase Error:", error);
-      */
     } catch (err) {
       console.error("Failed to send:", err);
     }
@@ -97,6 +96,16 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
         inverted={false}
       />
 
+      <View style={styles.quickReplyContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickReplyScroll}>
+          {['Send Police Now', 'I am being followed', 'Call my emergency contacts', 'Send Ambulance'].map((phrase) => (
+            <TouchableOpacity key={phrase} style={styles.quickReplyBtn} onPress={() => sendMessage(phrase)}>
+              <Text style={styles.quickReplyText}>{phrase}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.inputContainer}
@@ -109,7 +118,7 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
           onChangeText={setInputText}
           multiline
         />
-        <TouchableOpacity style={styles.sendButton} onPress={sendMessage}>
+        <TouchableOpacity style={styles.sendButton} onPress={() => sendMessage()}>
           <Feather name="send" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </KeyboardAvoidingView>
@@ -173,6 +182,29 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#1C1C1E',
     backgroundColor: '#000000',
+  },
+  quickReplyContainer: {
+    backgroundColor: '#000000',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#1C1C1E',
+  },
+  quickReplyScroll: {
+    paddingHorizontal: 16,
+  },
+  quickReplyBtn: {
+    backgroundColor: '#1C1C1E',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  quickReplyText: {
+    color: '#F8F9FA',
+    fontSize: 14,
+    fontWeight: '600',
   },
   input: {
     flex: 1,

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
 
 interface FakeCallProps {
   onEndCall: () => void;
@@ -10,15 +9,7 @@ interface FakeCallProps {
 export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
   const [callState, setCallState] = useState<'ringing' | 'active' | 'ended'>('ringing');
   const [seconds, setSeconds] = useState(0);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-
-  useEffect(() => {
-    return sound
-      ? () => {
-          sound.unloadAsync();
-        }
-      : undefined;
-  }, [sound]);
+  const soundRef = useRef<any>(null);
 
   // Haptic feedback loop for ringing state
   useEffect(() => {
@@ -30,7 +21,52 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
     return () => Vibration.cancel();
   }, [callState]);
 
-  // Live Timer
+  // Audio ringing using expo-audio
+  useEffect(() => {
+    let active = true;
+
+    const startRinging = async () => {
+      try {
+        const ExpoAudio = require('expo-audio');
+        await ExpoAudio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: false,
+        });
+        const player = ExpoAudio.createAudioPlayer(
+          require('../assets/aj_sound.mp3'),
+        );
+        player.loop = true;
+        player.volume = 1.0;
+        if (active) {
+          soundRef.current = player;
+          player.play();
+        } else {
+          player.remove();
+        }
+      } catch (e) {
+        console.log('Ringtone unavailable:', e);
+      }
+    };
+
+    if (callState === 'ringing') {
+      startRinging();
+    } else {
+      if (soundRef.current) {
+        try { soundRef.current.remove(); } catch (_) {}
+        soundRef.current = null;
+      }
+    }
+
+    return () => {
+      active = false;
+      if (soundRef.current) {
+        try { soundRef.current.remove(); } catch (_) {}
+        soundRef.current = null;
+      }
+    };
+  }, [callState]);
+
+  // Live call timer
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (callState === 'active') {
@@ -47,25 +83,13 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
     return `${m}:${s}`;
   };
 
-  const handleAccept = async () => {
+  const handleAccept = () => {
     setCallState('active');
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-         require('../assets/aj_sound.mp3')
-      );
-      setSound(sound);
-      await sound.playAsync();
-    } catch (e) {
-      console.log("Audio play error", e);
-    }
   };
 
-  const handleDeclineOrEnd = async () => {
+  const handleDeclineOrEnd = () => {
     setCallState('ended');
-    if (sound) {
-      await sound.stopAsync();
-    }
-    onEndCall(); 
+    onEndCall();
   };
 
   return (
@@ -80,13 +104,11 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
       <View style={styles.buttonContainer}>
         {callState === 'ringing' ? (
           <>
-            {/* Decline Button: Red + Phone Off Icon */}
             <TouchableOpacity style={[styles.button, styles.declineBtn]} onPress={handleDeclineOrEnd}>
               <Feather name="phone-off" size={28} color="#FFFFFF" style={styles.iconSpacing} />
               <Text style={styles.buttonText}>Decline</Text>
             </TouchableOpacity>
-            
-            {/* Accept Button: Green + Phone Call Icon */}
+
             <TouchableOpacity style={[styles.button, styles.acceptBtn]} onPress={handleAccept}>
               <Feather name="phone-call" size={28} color="#FFFFFF" style={styles.iconSpacing} />
               <Text style={styles.buttonText}>Accept</Text>
@@ -106,7 +128,7 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Pure black for OLED battery & glare reduction
+    backgroundColor: '#000000',
     justifyContent: 'space-between',
     paddingVertical: 60,
   },
@@ -117,7 +139,7 @@ const styles = StyleSheet.create({
   callerName: {
     fontSize: 42,
     color: '#F8F9FA',
-    fontWeight: '400', // Bumped up from 200 for stress legibility
+    fontWeight: '400',
     marginBottom: 8,
   },
   callStatus: {
@@ -132,9 +154,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   button: {
-    width: 85, // Massive touch target
+    width: 85,
     height: 85,
-    borderRadius: 12, // Structural, not a pill
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -155,6 +177,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#F8F9FA',
     fontSize: 14,
-    fontWeight: '800', // Ultra-bold for critical action
+    fontWeight: '800',
   },
 });
