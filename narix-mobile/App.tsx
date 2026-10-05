@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import FakeCallScreen from './src/FakeCallScreen';
 import SosChatScreen from './src/SosChatScreen';
+import RoadRoutingScreen from './src/RoadRoutingScreen';
 
 const { width, height } = Dimensions.get('window');
 
@@ -22,6 +23,7 @@ export default function App() {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [showFakeCall, setShowFakeCall] = useState(false);
   const [showSosChat, setShowSosChat] = useState(false);
+  const [showRoadRouting, setShowRoadRouting] = useState(false);
 
   // 1. Check Auth & Get Initial Location
   useEffect(() => {
@@ -96,6 +98,10 @@ export default function App() {
 
   if (showSosChat) {
     return <SosChatScreen onClose={() => setShowSosChat(false)} />;
+  }
+
+  if (showRoadRouting) {
+    return <RoadRoutingScreen onClose={() => setShowRoadRouting(false)} />;
   }
 
   return (
@@ -177,6 +183,17 @@ export default function App() {
               <Ionicons name={isActive ? "shield-checkmark" : "shield"} size={22} color="#FFF" style={{marginRight: 8}}/>
               <Text style={styles.primaryButtonText}>
                 {isActive ? "End Safe Walk Session" : "Start Safe Walk"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Road Routing Button */}
+            <TouchableOpacity 
+              style={[styles.primaryButton, { backgroundColor: '#5E5CE6', marginTop: 12 }]} 
+              onPress={() => setShowRoadRouting(true)}
+            >
+              <Ionicons name="map" size={22} color="#FFF" style={{marginRight: 8}}/>
+              <Text style={styles.primaryButtonText}>
+                Safe Route Planner
               </Text>
             </TouchableOpacity>
 
