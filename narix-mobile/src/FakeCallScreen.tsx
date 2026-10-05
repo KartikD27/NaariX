@@ -52,9 +52,8 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 
   const handleAccept = () => {
     setCallState('active');
-    console.log("Call accepted. Playing audio. isLoaded:", voicePlayer.isLoaded);
-    voicePlayer.volume = 1.0;
-    voicePlayer.play();
+    console.log("Call accepted.");
+    // We won't play audio automatically anymore, we wait for the user to choose a phrase!
   };
 
   const handleDeclineOrEnd = () => {
@@ -62,6 +61,21 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
     console.log("Call ended. Pausing audio.");
     voicePlayer.pause();
     onEndCall();
+  };
+
+  const playPhrase = (phraseNum: number) => {
+    // Currently mapping all phrases to aj_sound.mp3 until you add more files
+    let source = require('../assets/aj_sound.mp3');
+    
+    // Example of how you will map them once you have the files:
+    // if (phraseNum === 1) source = require('../assets/phrase1.mp3');
+    // if (phraseNum === 2) source = require('../assets/phrase2.mp3');
+    // if (phraseNum === 3) source = require('../assets/phrase3.mp3');
+    // if (phraseNum === 4) source = require('../assets/phrase4.mp3');
+
+    voicePlayer.replace(source);
+    voicePlayer.volume = 1.0;
+    voicePlayer.play();
   };
 
   return (
@@ -87,10 +101,27 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
             </TouchableOpacity>
           </>
         ) : (
-          <TouchableOpacity style={[styles.button, styles.endBtn]} onPress={handleDeclineOrEnd}>
-            <Feather name="phone-off" size={28} color="#FFFFFF" style={styles.iconSpacing} />
-            <Text style={styles.buttonText}>End Call</Text>
-          </TouchableOpacity>
+          <View style={styles.activeCallControls}>
+             <View style={styles.phrasesGrid}>
+                <TouchableOpacity style={styles.phraseBtn} onPress={() => playPhrase(1)}>
+                   <Text style={styles.phraseText}>"Where are you?"</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.phraseBtn} onPress={() => playPhrase(2)}>
+                   <Text style={styles.phraseText}>"I'm almost there"</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.phraseBtn} onPress={() => playPhrase(3)}>
+                   <Text style={styles.phraseText}>"Are you okay?"</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.phraseBtn} onPress={() => playPhrase(4)}>
+                   <Text style={styles.phraseText}>"Wait for me"</Text>
+                </TouchableOpacity>
+             </View>
+
+            <TouchableOpacity style={[styles.button, styles.endBtn]} onPress={handleDeclineOrEnd}>
+              <Feather name="phone-off" size={28} color="#FFFFFF" style={styles.iconSpacing} />
+              <Text style={styles.buttonText}>End Call</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </View>
@@ -124,6 +155,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     marginBottom: 60,
     paddingHorizontal: 20,
+  },
+  activeCallControls: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  phrasesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 40,
+    gap: 10,
+  },
+  phraseBtn: {
+    backgroundColor: '#1C1C1E',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  phraseText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   button: {
     width: 85,
