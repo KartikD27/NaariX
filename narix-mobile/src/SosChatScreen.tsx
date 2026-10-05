@@ -38,15 +38,15 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
 
   useEffect(() => {
     // Listen for new messages coming from the Police Dashboard
+    console.log("Subscribing to Supabase realtime for dispatch_messages...");
     const channel = supabase
-      .channel('public:dispatch_messages')
+      .channel('dispatch-messages-channel')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'dispatch_messages' },
         (payload) => {
+          console.log("Received new realtime message: ", payload);
           const newMsg = payload.new;
-          // We only want to append messages sent by the dispatch,
-          // because our own messages are already appended instantly when we send them.
           if (newMsg.sender_role === 'dispatch') {
             setMessages((prev) => [
               ...prev,
@@ -60,7 +60,9 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Supabase realtime subscription status: ", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
