@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Vibration } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 
 interface FakeCallProps {
   onEndCall: () => void;
@@ -9,7 +10,17 @@ interface FakeCallProps {
 export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
   const [callState, setCallState] = useState<'ringing' | 'active' | 'ended'>('ringing');
   const [seconds, setSeconds] = useState(0);
-  const soundRef = useRef<any>(null);
+
+  // Initialize the audio player for the fake voice
+  const voicePlayer = useAudioPlayer(require('../assets/aj_sound.mp3'));
+
+  useEffect(() => {
+    // Ensure audio plays even if the phone is on silent
+    setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: false,
+    }).catch(console.error);
+  }, []);
 
   // Haptic feedback loop for ringing state
   useEffect(() => {
@@ -19,51 +30,6 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
       Vibration.cancel();
     }
     return () => Vibration.cancel();
-  }, [callState]);
-
-  // Audio ringing using expo-audio
-  useEffect(() => {
-    let active = true;
-
-    const startRinging = async () => {
-      try {
-        const ExpoAudio = require('expo-audio');
-        await ExpoAudio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: false,
-        });
-        const player = ExpoAudio.createAudioPlayer(
-          require('../assets/aj_sound.mp3'),
-        );
-        player.loop = true;
-        player.volume = 1.0;
-        if (active) {
-          soundRef.current = player;
-          player.play();
-        } else {
-          player.remove();
-        }
-      } catch (e) {
-        console.log('Ringtone unavailable:', e);
-      }
-    };
-
-    if (callState === 'ringing') {
-      startRinging();
-    } else {
-      if (soundRef.current) {
-        try { soundRef.current.remove(); } catch (_) {}
-        soundRef.current = null;
-      }
-    }
-
-    return () => {
-      active = false;
-      if (soundRef.current) {
-        try { soundRef.current.remove(); } catch (_) {}
-        soundRef.current = null;
-      }
-    };
   }, [callState]);
 
   // Live call timer
@@ -85,10 +51,12 @@ export default function FakeCallScreen({ onEndCall }: FakeCallProps) {
 
   const handleAccept = () => {
     setCallState('active');
+    voicePlayer.play();
   };
 
   const handleDeclineOrEnd = () => {
     setCallState('ended');
+    voicePlayer.pause();
     onEndCall();
   };
 
