@@ -36,6 +36,37 @@ export default function SOSChatScreen({ onClose }: SOSChatProps) {
     }
   ]);
 
+  useEffect(() => {
+    // Listen for new messages coming from the Police Dashboard
+    const channel = supabase
+      .channel('public:dispatch_messages')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispatch_messages' },
+        (payload) => {
+          const newMsg = payload.new;
+          // We only want to append messages sent by the dispatch,
+          // because our own messages are already appended instantly when we send them.
+          if (newMsg.sender_role === 'dispatch') {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: newMsg.id || Date.now().toString(),
+                text: newMsg.message_text,
+                sender: 'dispatch',
+                timestamp: new Date(newMsg.created_at || new Date()),
+              },
+            ]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const sendMessage = async (overrideText?: string) => {
     const textToSend = overrideText || inputText;
     if (!textToSend.trim()) return;
